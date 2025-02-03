@@ -341,7 +341,7 @@ class XArmRobot(Robot):
 
 
 def main():
-    ip = "192.168.1.226"
+    ip = "192.168.1.213"
     robot = XArmRobot(ip)
     import time
 
@@ -350,7 +350,12 @@ def main():
 
     time.sleep(1)
     print(robot.get_state())
-    print("end")
+    # print("end")
+    joint = [0, 0, -np.pi/2, 0, 0, 0, 0]
+    print("robot observations", robot.get_observations())
+    robot.command_joint_state(joint)
+    
+    
     robot.stop()
 
 

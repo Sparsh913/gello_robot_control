@@ -5,6 +5,7 @@ from typing import List, Optional, Tuple
 import numpy as np
 
 from gello.cameras.camera import CameraDriver
+import cv2
 
 
 def get_device_ids() -> List[str]:
@@ -44,7 +45,10 @@ class RealSenseCamera(CameraDriver):
 
         config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
         config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
-        self._pipeline.start(config)
+        cfg = self._pipeline.start(config)
+        # profile = cfg.get_stream(rs.stream.depth)
+        # intr = profile.as_video_stream_profile().get_intrinsics()
+        # print('intrinsics:', intr)
         self._flip = flip
 
     def read(
@@ -61,7 +65,6 @@ class RealSenseCamera(CameraDriver):
             np.ndarray: The color image, shape=(H, W, 3)
             np.ndarray: The depth image, shape=(H, W, 1)
         """
-        import cv2
 
         frames = self._pipeline.wait_for_frames()
         color_frame = frames.get_color_frame()
@@ -99,25 +102,49 @@ def _debug_read(camera, save_datastream=False):
     while True:
         time.sleep(0.1)
         image, depth = camera.read()
+        #normalize depth
+        depth_1 = depth
+        depth = (depth ) / (np.mean(depth)) * 255
+        
+        #rotate image
+        # image = cv2.rotate(image, cv2.ROTATE_180)
+        # rgb to brg
+        
+        depth = depth.astype(np.uint8)
+        
         depth = np.concatenate([depth, depth, depth], axis=-1)
+        depth = cv2.rotate(depth, cv2.ROTATE_180)
         key = cv2.waitKey(1)
         cv2.imshow("image", image[:, :, ::-1])
-        cv2.imshow("depth", depth)
-        if key == ord("s"):
-            cv2.imwrite(f"images/image_{counter}.png", image[:, :, ::-1])
-            cv2.imwrite(f"images/depth_{counter}.png", depth)
+        # cv2.imshow("depth", depth)
+        # print('max depth:', np.max(depth))
+        # print('min depth:', np.min(depth))
+        # if key == ord("s"):
+        #     cv2.imwrite(f"images/image_{counter}.png", image[:, :, ::-1])
+        #     cv2.imwrite(f"images/depth_{counter}.png", depth)
+        #     ## save the original depth as npy
         if save_datastream:
-            cv2.imwrite(f"stream/image_{counter}.png", image[:, :, ::-1])
-            cv2.imwrite(f"stream/depth_{counter}.png", depth)
+            # cv2.imwrite(f"/home/uas-laptop/liquid_detection/data_labeling/new_data_11_24/speed_15/vialw/{counter}.jpg", image[:, :, ::-1])
+            cv2.imwrite(f"stream/image_{counter}.jpg", image[:, :, ::-1])
+            # cv2.imwrite(f"stream/depth_{counter}.png", depth)
+            # np.save(f"images/depth_{counter}.npy", depth_1)
+            
         counter += 1
         if key == 27:
             break
 
 
 if __name__ == "__main__":
+    
+    #read device index from arguments
+    import sys
+    if len(sys.argv) > 1:
+        device_id = int(sys.argv[1])
+    else :
+        device_id = 0
+    
     device_ids = get_device_ids()
     print(f"Found {len(device_ids)} devices")
-    print(device_ids)
-    rs = RealSenseCamera(flip=True, device_id=device_ids[0])
+    rs = RealSenseCamera(flip=False, device_id=device_ids[device_id])
     im, depth = rs.read()
-    _debug_read(rs, save_datastream=True)
+    _debug_read(rs, save_datastream=False)

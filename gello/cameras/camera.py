@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Optional, Protocol, Tuple
+from typing_extensions import Optional, Protocol, Tuple
 
 import numpy as np
 

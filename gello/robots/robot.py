@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Dict, Protocol
+from typing_extensions import Dict, Protocol
 
 import numpy as np
 

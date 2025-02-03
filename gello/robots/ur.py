@@ -11,22 +11,28 @@ class URRobot(Robot):
     def __init__(self, robot_ip: str = "192.168.1.10", no_gripper: bool = False):
         import rtde_control
         import rtde_receive
-
-        [print("in ur robot") for _ in range(4)]
+        
         try:
+            print(robot_ip)
             self.robot = rtde_control.RTDEControlInterface(robot_ip)
+            print('in try')
         except Exception as e:
             print(e)
             print(robot_ip)
+            print('I am in except')
 
         self.r_inter = rtde_receive.RTDEReceiveInterface(robot_ip)
         if not no_gripper:
             from gello.robots.robotiq_gripper import RobotiqGripper
+            # from gello.robots.custom_gripper import CustomGripper
 
             self.gripper = RobotiqGripper()
+            # self.gripper = CustomGripper()
             self.gripper.connect(hostname=robot_ip, port=63352)
+            # self.gripper.connect()
             print("gripper connected")
-            # gripper.activate()
+            self.gripper.activate()
+            print("gripper activated")
 
         [print("connect") for _ in range(4)]
 
@@ -43,7 +49,7 @@ class URRobot(Robot):
         if self._use_gripper:
             return 7
         return 6
-
+    
     def _get_gripper_pos(self) -> float:
         import time
 
@@ -51,6 +57,21 @@ class URRobot(Robot):
         gripper_pos = self.gripper.get_current_position()
         assert 0 <= gripper_pos <= 255, "Gripper position must be between 0 and 255"
         return gripper_pos / 255
+
+    # def _get_gripper_pos(self) -> float:
+    #     # import time
+
+    #     # time.sleep(0.01)
+        
+    #     gripper_pos = self.gripper.get_current_position()
+    #     # gripper_pos = gripper_pos - 2604
+    #     # gripper_pos = gripper_pos // 1290
+    #     #flip the gripper position
+    #     gripper_pos = (1 - gripper_pos)
+    #     print("gripper position", gripper_pos)
+    #     print("gripper position", gripper_pos)
+    #     assert 0 <= gripper_pos <= 255, "Gripper position must be between 0 and 255"
+    #     return gripper_pos 
 
     def get_joint_state(self) -> np.ndarray:
         """Get the current state of the leader robot.
@@ -72,9 +93,11 @@ class URRobot(Robot):
         Args:
             joint_state (np.ndarray): The state to command the leader robot to.
         """
-        velocity = 0.5
-        acceleration = 0.5
+        velocity = 0.5 #0.01 
+        acceleration = 0.5 #0.01
         dt = 1.0 / 500  # 2ms
+        # set dt corresponding to 5 degree per second of joint speed
+        # dt = 60
         lookahead_time = 0.2
         gain = 100
 
@@ -84,9 +107,16 @@ class URRobot(Robot):
             robot_joints, velocity, acceleration, dt, lookahead_time, gain
         )
         if self._use_gripper:
-            gripper_pos = joint_state[-1] * 255
-            self.gripper.move(gripper_pos, 255, 10)
-        self.robot.waitPeriod(t_start)
+            gripper_pos = int(joint_state[-1] * 255)
+            # print("joint state", joint_state)
+            # print("gripper position", gripper_pos)
+            if gripper_pos == 255:
+                trigger = True
+            else:
+                trigger = False
+            self.gripper.move(gripper_pos, 255, 50)
+            # self.gripper.move(trigger)
+        # self.robot.waitPeriod(t_start)
 
     def freedrive_enabled(self) -> bool:
         """Check if the robot is in freedrive mode.
@@ -122,11 +152,22 @@ class URRobot(Robot):
 
 
 def main():
-    robot_ip = "192.168.1.11"
-    ur = URRobot(robot_ip, no_gripper=True)
-    print(ur)
-    ur.set_freedrive_mode(True)
+    robot_ip = "192.168.1.10"
+    ur = URRobot(robot_ip, no_gripper=False)
+    # print(ur)
+    # ur.set_freedrive_mode(True)
+    joint = [-2.9*np.pi/180, -51.42*np.pi/180, 70.01*np.pi/180, -194.89*np.pi/180, -83.58*np.pi/180, -90*np.pi/180, 1]
+    
+    # ur._use_gripper = True
+    
+    
     print(ur.get_observations())
+    for i in range(10):
+        obs = ur.get_observations()
+        curjoints = obs["joint_positions"]
+        
+        ur.command_joint_state(np.array(joint))
+        
 
 
 if __name__ == "__main__":
