@@ -119,7 +119,7 @@ def robot_thread():
             delta_t = timestamp - prev_time
             if delta_t > 0:
                 actual_accelerations = (np.array(actual_speeds) - np.array(prev_speeds)) / delta_t
-                # commanded_angles += delta_t * -1 * commanded_speeds
+                commanded_angles += delta_t * 1 * commanded_speeds
             else:
                 actual_accelerations = np.zeros_like(actual_speeds)
                 # commanded_angles += np.zeros_like(actual_angles)
@@ -150,35 +150,48 @@ def command_thread(motion_type: str):
     """Sends movement commands to the robot."""
     # global terminate
     global speed, commanded_angles, commanded_speeds, commanded_accelerations, terminate
-    speed = 30  # Constant speed command
+    speed = 50  # Constant speed command
     amplitude = np.deg2rad(85)  # Amplitude for sinusoidal movement
     freq = 0.25  # Frequency for sinusoidal movement
     omega = 2 * np.pi * freq
     start_time = time.perf_counter()
+    
+    if motion_type == "sinusoidal":
 
-    while True:
-        # Move the J3 joint to -90 degrees
-        # arm.set_servo_angle(servo_id=3, angle=-90, speed=speed, is_radian=False, wait=False)
+        while True:
+            # Move the J3 joint to -90 degrees
+            # arm.set_servo_angle(servo_id=3, angle=-90, speed=speed, is_radian=False, wait=False)
 
-        # Move the J6 joint to 0 degrees
-        # arm.set_servo_angle(servo_id=6, angle=0, speed=speed, is_radian=False, wait=False)
-        # J6: sinusoidal movement with amplitude of 90 degrees - max 90 degree in each direction, just for 1 cycle; freq corresponding to speed
-        t = time.perf_counter() - start_time
-        print(f"t: {t}")
-        if motion_type == "sinusoidal":
+            # Move the J6 joint to 0 degrees
+            # arm.set_servo_angle(servo_id=6, angle=0, speed=speed, is_radian=False, wait=False)
+            # J6: sinusoidal movement with amplitude of 90 degrees - max 90 degree in each direction, just for 1 cycle; freq corresponding to speed
+            t = time.perf_counter() - start_time
+            print(f"t: {t}")
+            # if motion_type == "sinusoidal":
             commanded_angles[5] = amplitude * np.sin(omega * t)
             commanded_speeds[5] = amplitude * omega * np.cos(omega * t)
             commanded_accelerations[5] = amplitude * omega**2 * np.sin(omega * t)
             arm.set_servo_angle(servo_id=6, angle=commanded_angles[5], is_radian=True, wait=False)
             time.sleep(0.02)
-        elif motion_type == "constant":
+        # elif motion_type == "constant":
             # go from 0 to 90 degrees with angular velocity of 0.5 rad/sec
-            time_step = 0.03
-            commanded_angles[5] += (np.deg2rad(speed) * time_step)
-            commanded_speeds[5] = np.deg2rad(speed)
-            commanded_accelerations[5] = 0
-            arm.set_servo_angle(servo_id=6, angle=commanded_angles[5], is_radian=True, wait=False)
-            time.sleep(time_step)
+            # time_step = 1/30
+            # commanded_angles[5] += (np.deg2rad(speed) * time_step)
+            # commanded_speeds[5] = np.deg2rad(speed)
+            # commanded_accelerations[5] = 0
+            # arm.set_servo_angle(servo_id=6, angle=commanded_angles[5], is_radian=True, wait=False)
+            # time.sleep(time_step)
+    elif motion_type == "constant":
+        arm.set_servo_angle(servo_id=6, angle=np.deg2rad(87), speed=np.deg2rad(speed), is_radian=True, wait=False)
+        commanded_speeds[5] = np.deg2rad(speed)
+        commanded_accelerations[5] = 0
+        # while commanded_angles[5] < np.deg2rad(87):
+        #     time_step = 0.01
+        #     commanded_angles[5] += (np.deg2rad(speed) * time_step)
+        #     commanded_speeds[5] = np.deg2rad(speed)
+        #     commanded_accelerations[5] = 0
+        #     arm.set_servo_angle(servo_id=6, angle=commanded_angles[5], is_radian=True, wait=False)
+            # time.sleep(time_step)
          
 
 def logger_thread():

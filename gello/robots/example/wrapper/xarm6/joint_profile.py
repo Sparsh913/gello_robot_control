@@ -19,6 +19,10 @@ def plot_joint_profile(
     
     # Plot joint speeds
     axs[1].plot(timestamps, actual_speeds, label='Actual Speeds', color='green')
+    # slope of actual curve
+    slope_actual = np.gradient(actual_angles, timestamps)
+    # print average slope
+    print(f"Average slope of actual curve: {np.mean(slope_actual)}")
     axs[1].plot(timestamps, commanded_speeds, label='Commanded Speeds', color='red')
     axs[1].set_ylabel('Speed (radians/second)')
     axs[1].legend()
@@ -71,6 +75,11 @@ if __name__ == "__main__":
             commanded_speed_wrist.append(float(commanded_speeds[5]))
             commanded_acceleration_wrist.append(float(commanded_accelerations[5]))
             timestamps.append(float(timestamp))
+            
+    # Use low pass filtering to smooth the actual data
+    # actual_angle_wrist = np.convolve(actual_angle_wrist, np.ones(20)/20, mode='same')
+    # actual_speed_wrist = np.convolve(actual_speed_wrist, np.ones(20)/20, mode='same')
+    # actual_acceleration_wrist = np.convolve(actual_acceleration_wrist, np.ones(20)/20, mode='same')
             
     # plot joint angles, speeds, and accelerations over time both actual and commanded
     plot_joint_profile(actual_angle_wrist, commanded_angle_wrist, actual_speed_wrist, commanded_speed_wrist, actual_acceleration_wrist, commanded_acceleration_wrist, timestamps)
