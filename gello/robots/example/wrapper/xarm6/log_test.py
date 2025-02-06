@@ -37,7 +37,7 @@ arm = XArmAPI(ip, is_radian=True)
 
 # Enable robot motion
 arm.motion_enable(enable=True)
-arm.set_mode(0)  # Position control mode
+arm.set_mode(4)  # Velocity control mode
 arm.set_state(state=0)
 
 # Shared queue for synchronization
@@ -52,7 +52,7 @@ commanded_accelerations = np.array([0, 0, 0, 0, 0, 0, 0])
 # Tracking previous speeds for acceleration computation
 prev_speeds = None
 prev_time = None
-
+ctr = 0
 device_ids = get_device_ids()
 rs = RealSenseCamera(flip=False, device_id=get_device_ids()[0])
 time.sleep(4) # wait for camera to start
@@ -90,9 +90,9 @@ def camera_thread():
         # Add image data to queue, but only log it later if it matches a robot timestamp
         sync_queue.put(("image", timestamp, frame[:, :, ::-1]))
 
-def robot_thread():
+def robot_thread(motion_type='constant'):
     """Logs actual and commanded joint states, speeds, and computes accelerations."""
-    global prev_speeds, prev_time, speed, commanded_angles, terminate, commanded_accelerations, commanded_speeds
+    global prev_speeds, prev_time, speed, commanded_angles, terminate, commanded_accelerations, commanded_speeds, ctr
 
     while True:
         timestamp = time.perf_counter()
@@ -119,7 +119,8 @@ def robot_thread():
             delta_t = timestamp - prev_time
             if delta_t > 0:
                 actual_accelerations = (np.array(actual_speeds) - np.array(prev_speeds)) / delta_t
-                commanded_angles += delta_t * 1 * commanded_speeds
+                if motion_type == "constant":
+                    commanded_angles += delta_t * 1 * commanded_speeds
             else:
                 actual_accelerations = np.zeros_like(actual_speeds)
                 # commanded_angles += np.zeros_like(actual_angles)
@@ -135,8 +136,14 @@ def robot_thread():
 
         # Assume commanded accelerations are not directly available
         # commanded_accelerations = np.zeros_like(commanded_speeds)  # Placeholder
-        if actual_angles[5] > np.deg2rad(85) or actual_angles[5] < np.deg2rad(-85):
-            terminate = True
+        if motion_type == 'constant':
+            if actual_angles[5] > np.deg2rad(85) or actual_angles[5] < np.deg2rad(-85):
+                terminate = True
+        elif motion_type == 'sinusoidal': # to be refined
+            if actual_angles[5] == 0:
+                ctr += 1
+            if ctr == 3:
+                terminate = True
 
         # if all([actual_angles, actual_speeds, actual_accelerations, 
         #         commanded_angles, commanded_speeds, commanded_accelerations]):
@@ -150,7 +157,7 @@ def command_thread(motion_type: str):
     """Sends movement commands to the robot."""
     # global terminate
     global speed, commanded_angles, commanded_speeds, commanded_accelerations, terminate
-    speed = 50  # Constant speed command
+    speed = 30  # Constant speed command
     amplitude = np.deg2rad(85)  # Amplitude for sinusoidal movement
     freq = 0.25  # Frequency for sinusoidal movement
     omega = 2 * np.pi * freq
@@ -158,7 +165,7 @@ def command_thread(motion_type: str):
     
     if motion_type == "sinusoidal":
 
-        while True:
+        while not terminate:
             # Move the J3 joint to -90 degrees
             # arm.set_servo_angle(servo_id=3, angle=-90, speed=speed, is_radian=False, wait=False)
 
@@ -166,12 +173,14 @@ def command_thread(motion_type: str):
             # arm.set_servo_angle(servo_id=6, angle=0, speed=speed, is_radian=False, wait=False)
             # J6: sinusoidal movement with amplitude of 90 degrees - max 90 degree in each direction, just for 1 cycle; freq corresponding to speed
             t = time.perf_counter() - start_time
-            print(f"t: {t}")
+            # print(f"t: {t}")
             # if motion_type == "sinusoidal":
             commanded_angles[5] = amplitude * np.sin(omega * t)
             commanded_speeds[5] = amplitude * omega * np.cos(omega * t)
+            speeds = [0, 0, 0, 0, 0, commanded_speeds[5], 0]
             commanded_accelerations[5] = amplitude * omega**2 * np.sin(omega * t)
-            arm.set_servo_angle(servo_id=6, angle=commanded_angles[5], is_radian=True, wait=False)
+            arm.vc_set_joint_velocity(speeds=speeds, is_radian=True, duration=0)
+            # arm.set_servo_angle(servo_id=6, angle=commanded_angles[5], is_radian=True, wait=False)
             time.sleep(0.02)
         # elif motion_type == "constant":
             # go from 0 to 90 degrees with angular velocity of 0.5 rad/sec
@@ -182,9 +191,12 @@ def command_thread(motion_type: str):
             # arm.set_servo_angle(servo_id=6, angle=commanded_angles[5], is_radian=True, wait=False)
             # time.sleep(time_step)
     elif motion_type == "constant":
-        arm.set_servo_angle(servo_id=6, angle=np.deg2rad(87), speed=np.deg2rad(speed), is_radian=True, wait=False)
-        commanded_speeds[5] = np.deg2rad(speed)
-        commanded_accelerations[5] = 0
+        # arm.set_servo_angle(servo_id=6, angle=np.deg2rad(87), speed=np.deg2rad(speed), is_radian=True, wait=False)
+        speeds = [0, 0, 0, 0, 0, np.deg2rad(speed), 0]
+        while not terminate:
+            arm.vc_set_joint_velocity(speeds=speeds, is_radian=True, duration=0)
+            commanded_speeds[5] = np.deg2rad(speed)
+            commanded_accelerations[5] = 0
         # while commanded_angles[5] < np.deg2rad(87):
         #     time_step = 0.01
         #     commanded_angles[5] += (np.deg2rad(speed) * time_step)
@@ -246,7 +258,7 @@ def logger_thread():
 os.makedirs(f"{image_folder_path}", exist_ok=True)
 # Start threads
 threading.Thread(target=camera_thread, daemon=True).start()
-threading.Thread(target=robot_thread, daemon=True).start()
+threading.Thread(target=robot_thread, args=(args.motion_type,), daemon=True).start()
 threading.Thread(target=logger_thread, daemon=True).start()
 threading.Thread(target=command_thread, args=(args.motion_type,), daemon=True).start()
 

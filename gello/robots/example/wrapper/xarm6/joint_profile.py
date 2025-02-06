@@ -20,9 +20,9 @@ def plot_joint_profile(
     # Plot joint speeds
     axs[1].plot(timestamps, actual_speeds, label='Actual Speeds', color='green')
     # slope of actual curve
-    slope_actual = np.gradient(actual_angles, timestamps)
+    # slope_actual = np.gradient(actual_angles, timestamps)
     # print average slope
-    print(f"Average slope of actual curve: {np.mean(slope_actual)}")
+    # print(f"Average slope of actual curve: {np.mean(slope_actual)}")
     axs[1].plot(timestamps, commanded_speeds, label='Commanded Speeds', color='red')
     axs[1].set_ylabel('Speed (radians/second)')
     axs[1].legend()
@@ -37,7 +37,7 @@ def plot_joint_profile(
     axs[2].grid()
     axs[2].set_xlabel('Time (seconds)')
     plt.tight_layout()
-    plt.savefig('joint_profile_cnstant.png')
+    plt.savefig('joint_profile_constant.png')
     plt.show()
         
 
