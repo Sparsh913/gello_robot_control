@@ -4,7 +4,7 @@ import os
 
 def plot_joint_profile(
     actual_angles, commanded_angles, actual_speeds, commanded_speeds, actual_accelerations, 
-    commanded_accelerations, timestamps
+    commanded_accelerations, timestamps, motion_type
     ):
     fig, axs = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
     fig.suptitle('Joint Angles, Speeds, and Accelerations Over Time')
@@ -37,14 +37,15 @@ def plot_joint_profile(
     axs[2].grid()
     axs[2].set_xlabel('Time (seconds)')
     plt.tight_layout()
-    plt.savefig('joint_profile_constant.png')
+    plt.savefig(f'joint_profile_{motion_type}.png')
     plt.show()
         
 
 if __name__ == "__main__":
     # parse txt log file to retrieve joint angles, speeds, and accelerations, along with timestamps
     # and save the plot as an image
-    log_file_path = "/home/uas-laptop/Kantor_Lab/sparsh/gello_software/joint_log_constant.txt"
+    motion_type = "constant_with_pause"
+    log_file_path = f"/home/uas-laptop/Kantor_Lab/sparsh/gello_software/joint_log_{motion_type}.txt"
     # text file of this format:
     # 1, 220.792627, Actual Angles: 0.0, 0.0, -1.570796012878418, 0.0, 0.0, 1.534250259399414, 0.0; Actual Speeds: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; Actual Efforts: 1.305232773093554e-15, -15.513633728027344, -12.161165237426758, -0.19442638754844666, -0.5657081007957458, 0.0004125152190681547, 0.0; Actual Accelerations: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; Commanded Angles: 0.0, 0.0, -1.570796, 0.0, 0.0, 1.5248644074734696, 0.0; Commanded Speeds: 0.0, 0.0, 0.0, 0.0, 0.0, 0.6981317007977318, 0.0; Commanded Accelerations: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
     # 2, 220.806071, Actual Angles: 0.0, 0.0, -1.570796012878418, 0.0, 0.0, 1.5342330932617188, 0.0; Actual Speeds: 0.0, 0.0, -8.716916077844417e-10, 0.0, 0.0, -0.003739491803571582, 0.0; Actual Efforts: 1.305232773093554e-15, -15.513633728027344, -12.161165237426758, -0.19442638754844666, -0.5657081007957458, 0.0004125152190681547, 0.0; Actual Accelerations: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; Commanded Angles: 0.0, 0.0, -1.570796, 0.0, 0.0, 1.5072693676892586, 0.0; Commanded Speeds: 0.0, 0.0, 0.0, 0.0, 0.0, 0.6981317007977318, 0.0; Commanded Accelerations: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
@@ -82,4 +83,4 @@ if __name__ == "__main__":
     # actual_acceleration_wrist = np.convolve(actual_acceleration_wrist, np.ones(20)/20, mode='same')
             
     # plot joint angles, speeds, and accelerations over time both actual and commanded
-    plot_joint_profile(actual_angle_wrist, commanded_angle_wrist, actual_speed_wrist, commanded_speed_wrist, actual_acceleration_wrist, commanded_acceleration_wrist, timestamps)
+    plot_joint_profile(actual_angle_wrist, commanded_angle_wrist, actual_speed_wrist, commanded_speed_wrist, actual_acceleration_wrist, commanded_acceleration_wrist, timestamps, motion_type)
