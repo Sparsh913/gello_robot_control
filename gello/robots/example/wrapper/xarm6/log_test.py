@@ -175,6 +175,10 @@ def command_thread(motion_type: str):
             # J6: sinusoidal movement with amplitude of 90 degrees - max 90 degree in each direction, just for 1 cycle; freq corresponding to speed
             t = time.perf_counter() - start_time
             # print(f"t: {t}")
+            if t > 1/freq:
+                arm.vc_set_joint_velocity(speeds=[0, 0, 0, 0, 0, 0, 0], is_radian=True, duration=0)
+                terminate = True
+                break
             # if motion_type == "sinusoidal":
             commanded_angles[5] = amplitude * np.sin(omega * t)
             commanded_speeds[5] = amplitude * omega * np.cos(omega * t)
@@ -198,13 +202,6 @@ def command_thread(motion_type: str):
             arm.vc_set_joint_velocity(speeds=speeds, is_radian=True, duration=0)
             commanded_speeds[5] = np.deg2rad(speed)
             commanded_accelerations[5] = 0
-        # while commanded_angles[5] < np.deg2rad(87):
-        #     time_step = 0.01
-        #     commanded_angles[5] += (np.deg2rad(speed) * time_step)
-        #     commanded_speeds[5] = np.deg2rad(speed)
-        #     commanded_accelerations[5] = 0
-        #     arm.set_servo_angle(servo_id=6, angle=commanded_angles[5], is_radian=True, wait=False)
-            # time.sleep(time_step)
             
     elif motion_type == "constant_with_pause":
         # 0 to 85 degrees with constant speed , pause for 1 second, then to 0 with constant speed, pause for 1 second, then to -85 degrees with constant speed, pause for 1 second, then to 0 with constant speed
@@ -320,4 +317,4 @@ threading.Thread(target=command_thread, args=(args.motion_type,), daemon=True).s
 
 # Keep the main thread alive
 while not terminate:
-    time.sleep(1)
+    time.sleep(0.18)
