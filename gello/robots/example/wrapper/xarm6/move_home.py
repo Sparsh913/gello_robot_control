@@ -29,26 +29,15 @@ else:
 
 arm = XArmAPI(ip, is_radian=True)
 arm.motion_enable(enable=True)
-# print("firmware version: ", arm.get_version())
-# arm.set_mode(0)
-# arm.set_state(state=0)
-# time.sleep(1)
+arm.set_mode(0)
+arm.set_state(state=0)
+time.sleep(1)
 
 # arm.set_servo_angle(servo_id=6, angle=0, speed=10, is_radian=False, wait=True)
-# arm.move_gohome(wait=True)
+# arm.move_gohome(wait=True) 
 
-# set velocity control mode
-print("setting velocity control mode")
-arm.set_mode(4)
-arm.set_state(state=0)
-print("VC mode set")
-time.sleep(1)   
+speed = 100
 
-speed = 10
-
-speeds = [0, 0, 0, 0,  0, 20, 0]
-while True:
-    arm.vc_set_joint_velocity(speeds, is_radian=False, duration=0)
 # time.sleep(5)
 # arm.set_servo_angle(servo_id=6, angle=0, speed=speed, is_radian=False, wait=True)
 # time.sleep(2)
@@ -56,7 +45,7 @@ while True:
 
 # move the J3 to 90 degrees
 # arm.set_servo_angle(servo_id=3, angle=-90, speed=speed, is_radian=False, wait=True)
-# arm.set_servo_angle(servo_id=6, angle=0, speed=speed, is_radian=False, wait=True)
+arm.set_servo_angle(servo_id=6, angle=0, speed=speed, is_radian=False, wait=True)
 # print(f"t={t}, angle={arm.get_servo_angle()[0]}, speed={arm.realtime_joint_speeds}")
 
 # move j6 (-90 to 90) in sinusoidal way
