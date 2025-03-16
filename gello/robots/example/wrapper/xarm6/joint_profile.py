@@ -44,7 +44,7 @@ def plot_joint_profile(
 if __name__ == "__main__":
     # parse txt log file to retrieve joint angles, speeds, and accelerations, along with timestamps
     # and save the plot as an image
-    motion_type = "constant_with_pause"
+    motion_type = "sine"
     log_file_path = f"/home/uas-laptop/Kantor_Lab/sparsh/gello_software/joint_log_{motion_type}.txt"
     # text file of this format:
     # 1, 220.792627, Actual Angles: 0.0, 0.0, -1.570796012878418, 0.0, 0.0, 1.534250259399414, 0.0; Actual Speeds: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; Actual Efforts: 1.305232773093554e-15, -15.513633728027344, -12.161165237426758, -0.19442638754844666, -0.5657081007957458, 0.0004125152190681547, 0.0; Actual Accelerations: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0; Commanded Angles: 0.0, 0.0, -1.570796, 0.0, 0.0, 1.5248644074734696, 0.0; Commanded Speeds: 0.0, 0.0, 0.0, 0.0, 0.0, 0.6981317007977318, 0.0; Commanded Accelerations: 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0

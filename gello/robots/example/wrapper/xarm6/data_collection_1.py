@@ -60,10 +60,10 @@ time.sleep(4) # wait for camera to start
 # args
 parser = argparse.ArgumentParser()
 parser.add_argument('--motion_type', type=str, default='sinusoidal', help='Motion type: sinusoidal or constant')
-parser.add_argument('--speed', type=int, default=40, help='Speed of the robot')
-parser.add_argument('--amplitude', type=int, default=70, help='Amplitude of the sinusoidal movement or max angle of the constant movement')
+parser.add_argument('--speed', type=float, default=40, help='Speed of the robot')
+parser.add_argument('--amplitude', type=float, default=70, help='Amplitude of the sinusoidal movement or max angle of the constant movement')
 parser.add_argument('--frequency', type=float, default=0.25, help='Frequency of the sinusoidal movement')
-parser.add_argument('--pause_time', type=int, default=1, help='Pause time in seconds')
+parser.add_argument('--pause_time', type=float, default=1, help='Pause time in seconds')
 parser.add_argument('--vial_id', type=int, required=True, help='Vial ID')
 
 args = parser.parse_args()
@@ -212,9 +212,9 @@ def command_thread(motion_type: str, motion_params: dict):
         # 0 to 85 degrees with constant speed , pause for 1 second, then to 0 with constant speed, pause for 1 second, then to -85 degrees with constant speed, pause for 1 second, then to 0 with constant speed
         positive_speeds = [0, 0, 0, 0, 0, np.deg2rad(speed), 0]
         negative_speeds = [0, 0, 0, 0, 0, -np.deg2rad(speed), 0]
-        pause_time = 1
+        pause_time = motion_params['pause_time']
         while not terminate:
-            while commanded_angles[5] < np.deg2rad(amplitude):
+            while commanded_angles[5] < amplitude:
                 arm.vc_set_joint_velocity(speeds=positive_speeds, is_radian=True, duration=0)
                 commanded_speeds[5] = np.deg2rad(speed)
                 commanded_accelerations[5] = 0
@@ -238,7 +238,7 @@ def command_thread(motion_type: str, motion_params: dict):
             commanded_accelerations[5] = 0
             time.sleep(pause_time)
             
-            while commanded_angles[5] > np.deg2rad(-1*amplitude):
+            while commanded_angles[5] > -1*amplitude:
                 arm.vc_set_joint_velocity(speeds=negative_speeds, is_radian=True, duration=0)
                 commanded_speeds[5] = -np.deg2rad(speed)
                 commanded_accelerations[5] = 0
@@ -287,14 +287,19 @@ def logger_thread():
 
             if abs(img_time - jnt_time) < 0.01: # 10 ms tolerance
                 image_counter += 1  # Increment image counter for consistent numbering
-                filename = f"{image_folder_path}/image_{image_counter}.png"
+                # filename = f"{image_folder_path}/image_{image_counter}.png"
+                # save images in jpg format with filename as image_counter
+                filename = f"{image_folder_path}/{image_counter}.jpg"
+                img_data = cv2.flip(img_data, 1)  # Flip image horizontally
+                # flip image upside down
+                img_data = cv2.flip(img_data, 0)  # Flip image vertically
                 cv2.imwrite(filename, img_data)
                 # print(f"Saved {filename}")
 
                 # Log timestamp with corresponding image ID
                 with open(image_log_file_path, "a") as f:
-                    f.write(f"{image_counter}, {jnt_time:.6f}\n")
-                    print(f"Logged {image_counter} at {jnt_time:.6f}")
+                    f.write(f"{image_counter}, {img_time:.6f}\n")
+                    print(f"Logged {image_counter} at {img_time:.6f}")
 
                 # Log joint data with corresponding image ID
                 with open(joint_log_file_path, "a") as f:
